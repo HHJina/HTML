@@ -1,0 +1,146 @@
+<html>
+<head>
+    <title>도서검색</title>
+    <script src="http://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <link rel="stylesheet" href="common.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.1/handlebars.js"></script>
+    <style>
+        #books{
+            overflow: hidden;
+            width:900px;
+            margin: 0 auto;
+            padding-left: 50px;
+        }
+        .box{
+            float:left;
+            width: 150px;
+            border : 1px solid red;
+            margin:5px;
+            padding: 5px;
+            border-radius: 10px;
+            background: rosybrown;
+        }
+
+        .title ,.author{
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: 12px;
+        }
+        .price{
+            color: red;
+            font-weight: bold;
+        }
+        #bookInfo{
+            border-top:5px dotted gray;
+            border-bottom: 5px dotted gray;
+            margin: 10px;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        button:disabled{background: gray;}
+    </style>
+</head>
+<body>
+    <div id="page">
+        <div id="top">
+            <h1>도서검색</h1>
+        </div>
+        <div id="center">
+            <!--도서 검색한 결과목록-->
+            <div id="bookInfo">
+                <input type="text" placeholder="검색어"id="query" value="개똥">
+               검색수:<span id="total"></span>건
+            </div>
+            <div id="books"></div>
+            <script id="temp" type="text/x-handlebars-template">
+                {{#each documents}}
+                <div class="box">
+                    <img src="{{getSrc thumbnail}}">
+                    <div class="title">{{title}}</div>
+                    <div class="price">{{price}}원</div>
+                    <div class="author">{{author}}</div>
+                </div>
+                {{/each}}
+            </script>
+            <script>
+                Handlebars.registerHelper("getSrc", function(thumbnail){
+                    if(thumbnail){
+                        return thumbnail;
+                    }else{
+                        return "http://placehold.it/150x170";
+                    }
+                });
+            </script>
+            <div id="buttons">
+                <button id="prev">이전</button>
+                <span id="curpage">1</span>
+                <button id="next">다음</button>
+            </div>
+        </div>
+        <div id="bottom">
+            <h3>Copyright 2022. 인천일보아카데미 Reserved All Rights.</h3>
+        </div>
+    </div>
+</body>
+<script>
+    let page=1;
+    let query=$("#query").val();
+
+    getBooks();
+    
+    //검색어입력상자에서 엔터키를 누른경우
+    $("#query").on("keydown", function(e){
+        if(e.keyCode==13){
+            page=1;
+            query=$("#query").val();
+            if(query==""){
+                alert("검색어를 입력하세요")
+            }else{
+                getBooks();
+            }
+            
+        }
+    });
+    $("#prev").on("click",function(){
+        page--;
+        getBooks();
+    });
+
+    $("#next").on("click",function(){
+        page++;
+        getBooks();
+    });
+    
+    function getBooks(){
+        $.ajax({
+            type:"get",
+            dataType:"json",
+            url:"https://dapi.kakao.com/v3/search/book?target=title",
+            headers:{"Authorization": "KakaoAK 3ec9f57f8a4c214cbbeb2b4b9148766c"},
+            data: {"query":query , "size": 10 ,"page":page},
+            success:function(data){
+                let template = Handlebars.compile($("#temp").html());
+                $("#books").html(template(data));
+
+                $("#total").html(data.meta.pageable_count);
+                $("#curpage").html(page);
+
+
+                if(page==1){
+                    $("#prev").attr("disabled" ,true);
+                }else{
+                    $("#prev").attr("disabled" ,false);
+                }
+
+                let is_end=data.meta.is_end; //마지막페이지
+                if(is_end){
+                    $("#next").attr("disabled" ,true);
+                }else{
+                    $("#next").attr("disabled" ,false);
+                }
+            }
+        });
+    }
+</script>
+</html>
